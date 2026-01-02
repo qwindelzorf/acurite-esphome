@@ -388,10 +388,10 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
       bool is_sync = data.peek_mark(sync_us) || data.peek_space(sync_us);
 
       if ((is_one || is_zero)) {
-        bits += 1;
         if (data.peek() > 1) {
           bytes[bits / 8] <<= 1;
           bytes[bits / 8] |= is_one ? 1 : 0;
+          bits += 1;
         }
 
         // reset if buffer is full
