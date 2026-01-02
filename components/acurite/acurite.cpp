@@ -388,14 +388,14 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
 
           // try to decode on whole bytes
           if ((bits & 7) == 0) {
-            this->decode_temperature_(device, bytes, bits / 8);
-            this->decode_rainfall_(device, bytes, bits / 8);
-            this->decode_lightning_(device, bytes, bits / 8);
-            this->decode_atlas_(device, bytes, bits / 8);
-            this->decode_notos_(device, bytes, bits / 8);
-            this->decode_iris_(device, bytes, bits / 8);
-            this->decode_515_(device, bytes, bits / 8);
-            this->decode_986_(device, bytes, bits / 8);
+            this->decode_temperature_(*device, bytes, bits / 8);
+            this->decode_rainfall_(*device, bytes, bits / 8);
+            this->decode_lightning_(*device, bytes, bits / 8);
+            this->decode_atlas_(*device, bytes, bits / 8);
+            this->decode_notos_(*device, bytes, bits / 8);
+            this->decode_iris_(*device, bytes, bits / 8);
+            this->decode_515_(*device, bytes, bits / 8);
+            this->decode_986_(*device, bytes, bits / 8);
           }
 
           // reset if buffer is full
