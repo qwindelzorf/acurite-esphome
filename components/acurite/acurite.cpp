@@ -365,47 +365,39 @@ void AcuRiteComponent::decode_iris_(AcuRiteDevice* device, uint8_t *data, uint8_
 }
 
 bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
-  uint8_t bytes[10] = {0};
-  uint32_t bits = 0;
-  uint32_t syncs = 0;
-
   ESP_LOGV(TAG, "Received raw data with length %" PRIi32, data.size());
-
-  // decode AcuRite OOK data
   data.set_tolerance(100, remote_base::TOLERANCE_MODE_TIME);
-  while (data.is_valid()) {
-    for (AcuRiteDevice* device : devices_) {
-      ESP_LOGV(TAG, "Trying Device %d (zero=%d, one=%d, sync=%d)", 
-        device->get_id(), device->get_zero_duration(), device->get_one_duration(), device->get_sync_duration());
-      
-      bool is_zero = data.peek_mark(device->get_zero_duration()) || data.peek_space(device->get_one_duration());
-      bool is_one = data.peek_mark(device->get_one_duration()) || data.peek_space(device->get_zero_duration());
-      bool is_sync = data.peek_mark(device->get_sync_duration()) || data.peek_space(device->get_sync_duration());
 
-      if ((is_one || is_zero) && syncs > device->get_sync_count()) {
-        if (data.peek() > 0) {
-          // detect bits using on state
+  // Attempt decode for each device
+  for (AcuRiteDevice* device : devices_) {
+    if (!device) continue;  // avoid null pointers (should never happen)
+    
+    uint32_t zero_us = device->get_zero_duration();
+    uint32_t one_us = device->get_one_duration();
+    uint32_t sync_us = device->get_sync_duration();
+
+    // ESP_LOGV(TAG, "Trying Device: %x", device);
+    ESP_LOGV(TAG, "Trying Device %d (zero=%d, one=%d, sync=%d)", device->get_id(), zero_us, one_us, sync_us);
+
+    uint8_t bytes[10] = {0};
+    uint32_t bits = 0;
+    uint32_t syncs = 0;
+    while (data.is_valid()) {
+      bool is_zero = data.peek_mark(zero_us) || data.peek_space(one_us);
+      bool is_one = data.peek_mark(one_us) || data.peek_space(zero_us);
+      bool is_sync = data.peek_mark(sync_us) || data.peek_space(sync_us);
+
+      if ((is_one || is_zero)) {
+        bits += 1;
+        if (is_one) {
           bytes[bits / 8] <<= 1;
           bytes[bits / 8] |= is_one ? 1 : 0;
-          bits += 1;
+        }
 
-          // try to decode on whole bytes
-          if ((bits & 7) == 0) {
-            this->decode_temperature_(device, bytes, bits / 8);
-            this->decode_rainfall_(device, bytes, bits / 8);
-            this->decode_lightning_(device, bytes, bits / 8);
-            this->decode_atlas_(device, bytes, bits / 8);
-            this->decode_notos_(device, bytes, bits / 8);
-            this->decode_iris_(device, bytes, bits / 8);
-            this->decode_515_(device, bytes, bits / 8);
-            this->decode_986_(device, bytes, bits / 8);
-          }
-
-          // reset if buffer is full
-          if (bits >= sizeof(bytes) * 8) {
-            bits = 0;
-            syncs = 0;
-          }
+        // reset if buffer is full
+        if (bits >= sizeof(bytes) * 8) {
+          bits = 0;
+          syncs = 0;
         }
       } else if (is_sync && bits == 0) {
         // count syncs
@@ -415,8 +407,22 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
         bits = 0;
         syncs = 0;
       }
+
+      // try to decode on whole bytes
+      if ((bits & 7) == 0 && syncs >= device->get_sync_count()) {
+        this->decode_temperature_(device, bytes, bits / 8);
+        this->decode_rainfall_(device, bytes, bits / 8);
+        this->decode_lightning_(device, bytes, bits / 8);
+        this->decode_atlas_(device, bytes, bits / 8);
+        this->decode_notos_(device, bytes, bits / 8);
+        this->decode_iris_(device, bytes, bits / 8);
+        this->decode_515_(device, bytes, bits / 8);
+        this->decode_986_(device, bytes, bits / 8);
+      }
+
+      data.advance();
     }
-    data.advance();
+    data.reset();
   }
   return true;
 }
