@@ -14,6 +14,9 @@ void AcuRiteBinarySensor::update_battery(uint8_t value) {
 
 void AcuRiteBinarySensor::dump_config() {
   ESP_LOGCONFIG(TAG, "AcuRite Binary Sensor: 0x%04x", this->id_);
+  ESP_LOGCONFIG(TAG, "  zero duration: %dus", this->zero_duration_);
+  ESP_LOGCONFIG(TAG, "  one duration: %dus", this->one_duration_);
+  ESP_LOGCONFIG(TAG, "  sync duration: %dus", this->sync_duration_);
   LOG_BINARY_SENSOR("  ", "Battery", this->battery_level_binary_sensor_);
 }
 

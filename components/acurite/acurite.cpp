@@ -129,8 +129,8 @@ void AcuRiteComponent::decode_986_(uint8_t *data, uint8_t len) {
   uint8_t crc = this->crc8le_(data, 4, 0x07);
   ESP_LOGV(TAG, "CRC data: %s", format_hex(data, len).c_str());
   if (crc != data[4]) {
-      ESP_LOGV(TAG, "CRC failure: %x != %x", crc, data[4]);
-      return;
+    ESP_LOGV(TAG, "CRC failure: %x != %x", crc, data[4]);
+    return;
   }
  
   float temp = (data[0] & 0x7F) * 1.0f;
@@ -366,10 +366,11 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
   // decode AcuRite OOK data
   data.set_tolerance(100, remote_base::TOLERANCE_MODE_TIME);
   while (data.is_valid()) {
-    bool is_sync = data.peek_mark(600) || data.peek_space(600);
-    bool is_zero = data.peek_mark(200) || data.peek_space(400);
-    bool is_one = data.peek_mark(400) || data.peek_space(200);
-    if ((is_one || is_zero) && syncs > 4) {
+    bool is_zero = data.peek_mark(this->get_zero_duration()) || data.peek_space(this->get_one_duration());
+    bool is_one = data.peek_mark(this->get_one_duration()) || data.peek_space(this->get_zero_duration());
+    bool is_sync = data.peek_mark(this->get_sync_duration()) || data.peek_space(this->get_sync_duration());
+
+    if ((is_one || is_zero) && syncs > this->get_sync_count()) {
       if (data.peek() > 0) {
         // detect bits using on state
         bytes[bits / 8] <<= 1;

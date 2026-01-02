@@ -39,6 +39,11 @@ CONF_RAIN = "rain"
 CONF_LIGHTNING = "lightning"
 CONF_UV = "uv"
 CONF_LUX = "lux"
+CONF_ZERO_DURATION = "zero_duration"
+CONF_ONE_DURATION = "one_duration"
+CONF_SYNC_DURATION = "sync_duration"
+CONF_SYNC_COUNT = "sync_count"
+
 UNIT_MILLIMETER = "mm"
 
 AcuRiteSensor = acurite_ns.class_("AcuRiteSensor", cg.Component)
@@ -47,6 +52,10 @@ DEVICE_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(AcuRiteSensor),
         cv.Required(CONF_DEVICE): cv.hex_int_range(max=0xFFFF),
+        cv.Optional(CONF_ZERO_DURATION, default="200us"): cv.positive_time_period_microseconds,
+        cv.Optional(CONF_ONE_DURATION, default="400us"): cv.positive_time_period_microseconds,
+        cv.Optional(CONF_SYNC_DURATION, default="600us"): cv.positive_time_period_microseconds,
+        cv.Optional(CONF_SYNC_COUNT, default=4): cv.positive_int,
         cv.Optional(CONF_SPEED): sensor.sensor_schema(
             unit_of_measurement=UNIT_KILOMETER_PER_HOUR,
             accuracy_decimals=1,
@@ -118,7 +127,14 @@ async def to_code(config):
         for device_cfg in devices_cfg:
             var = cg.new_Pvariable(device_cfg[CONF_ID])
             await cg.register_component(var, device_cfg)
+
+
             cg.add(var.set_id(device_cfg[CONF_DEVICE]))
+            cg.add(var.set_zero_duration(device_cfg[CONF_ZERO_DURATION]))
+            cg.add(var.set_one_duration(device_cfg[CONF_ONE_DURATION]))
+            cg.add(var.set_sync_duration(device_cfg[CONF_SYNC_DURATION]))
+            cg.add(var.set_sync_count(device_cfg[CONF_SYNC_COUNT]))
+
             if CONF_SPEED in device_cfg:
                 sens = await sensor.new_sensor(device_cfg[CONF_SPEED])
                 cg.add(var.set_speed_sensor(sens))
@@ -146,4 +162,5 @@ async def to_code(config):
             if CONF_LUX in device_cfg:
                 sens = await sensor.new_sensor(device_cfg[CONF_LUX])
                 cg.add(var.set_lux_sensor(sens))
+
             cg.add(parent.add_device(var, device_cfg[CONF_DEVICE]))
