@@ -375,9 +375,9 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
   data.set_tolerance(100, remote_base::TOLERANCE_MODE_TIME);
   while (data.is_valid()) {
     for (AcuRiteDevice* device : devices_) {
-      bool is_zero = data.peek_mark(*device.get_zero_duration()) || data.peek_space(*device.get_one_duration());
-      bool is_one = data.peek_mark(*device.get_one_duration()) || data.peek_space(*device.get_zero_duration());
-      bool is_sync = data.peek_mark(*device.get_sync_duration()) || data.peek_space(*device.get_sync_duration());
+      bool is_zero = data.peek_mark((*device).get_zero_duration()) || data.peek_space((*device).get_one_duration());
+      bool is_one = data.peek_mark((*device).get_one_duration()) || data.peek_space((*device).get_zero_duration());
+      bool is_sync = data.peek_mark((*device).get_sync_duration()) || data.peek_space((*device).get_sync_duration());
 
       if ((is_one || is_zero) && syncs > device.get_sync_count()) {
         if (data.peek() > 0) {
