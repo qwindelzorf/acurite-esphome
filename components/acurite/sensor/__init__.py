@@ -46,7 +46,7 @@ AcuRiteSensor = acurite_ns.class_("AcuRiteSensor", cg.Component)
 DEVICE_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(AcuRiteSensor),
-        cv.Required(CONF_DEVICE): cv.hex_int_range(max=0x3FFF),
+        cv.Required(CONF_DEVICE): cv.hex_int_range(max=0xFFFF),
         cv.Optional(CONF_SPEED): sensor.sensor_schema(
             unit_of_measurement=UNIT_KILOMETER_PER_HOUR,
             accuracy_decimals=1,
