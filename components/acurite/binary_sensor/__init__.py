@@ -15,7 +15,7 @@ AcuRiteBinarySensor = acurite_ns.class_("AcuRiteBinarySensor", cg.Component)
 DEVICE_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(AcuRiteBinarySensor),
-        cv.Required(CONF_DEVICE): cv.hex_int_range(max=0x3FFF),
+        cv.Required(CONF_DEVICE): cv.hex_int_range(max=0xFFFF),
         cv.Required(CONF_BATTERY_LEVEL): binary_sensor.binary_sensor_schema(
             device_class=DEVICE_CLASS_BATTERY,
         ),

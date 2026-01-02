@@ -110,11 +110,11 @@ void AcuRiteComponent::decode_986_(uint8_t *data, uint8_t len) {
     static const char CHANNEL_LUT[4] = {'R', 'F', 'X', 'X'};
     uint8_t sensor = data[3] & 0x01;
     char channel = CHANNEL_LUT[sensor];
+    uint16_t battery = (data[3] >> 1) & 0x01;
 
-    uint16_t battery = (data[2] >> 6) & 1;
-    if (msg == 0x08) {
+    if (sensor == 0) {
       ESP_LOGD(TAG, "986 Fridge:  ch %c, id %04x, bat %x, temp %.1f", channel, id, battery, temp);
-    } else if (msg == 0x09) {
+    } else if (sensor == 1) {
       ESP_LOGD(TAG, "986 Freezer: ch %c, id %04x, bat %x, temp %.1f", channel, id, battery, temp);
     } else {
       return;
