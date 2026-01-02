@@ -1,6 +1,7 @@
 #pragma once
 
 #include "esphome/components/remote_receiver/remote_receiver.h"
+#include <cstdint>
 
 namespace esphome {
 namespace acurite {
@@ -36,7 +37,8 @@ class AcuRiteComponent : public Component, public remote_base::RemoteReceiverLis
   void decode_atlas_(uint8_t *data, uint8_t len);
   void decode_notos_(uint8_t *data, uint8_t len);
   void decode_iris_(uint8_t *data, uint8_t len);
-  void decode_fridge_(uint8_t *data, uint8_t len);
+  void decode_515_(uint8_t *data, uint8_t len);
+  void decode_986_(uint8_t *data, uint8_t len);
   bool validate_(uint8_t *data, uint8_t len, int8_t except);
   std::vector<AcuRiteDevice *> devices_;
 };

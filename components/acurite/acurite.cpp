@@ -42,7 +42,24 @@ bool AcuRiteComponent::validate_(uint8_t *data, uint8_t len, int8_t except) {
   return true;
 }
 
-void AcuRiteComponent::decode_fridge_(uint8_t *data, uint8_t len) {
+/*
+
+Decode Acurite 515 Refrigerator/Freezer sensors
+
+Byte 0    | Byte 1    | Byte 2    | Byte 3    | Byte 4    | Byte 5
+CCII IIII | IIII IIII | pBMM MMMM | bTTT TTTT | bTTT TTTT | KKKK KKKK
+
+- C: Channel 00: C, 10: B, 11: A
+- I: Device ID (14 bits), volatie, resets at power up
+- B: Battery, 1 is battery OK, 0 is battery low
+- M: Message type (6 bits), 0x8: Refrigerator, 0x9: Freezer
+- T: Temperature Fahrenheit (14 bits?), + 1480 * 10
+- K: Checksum (8 bits)
+- p: Parity bit
+
+*/
+
+void AcuRiteComponent::decode_515_(uint8_t *data, uint8_t len) {
   if (len == 6 && this->validate_(data, 6, -1)) {
     char channel = CHANNEL_LUT[data[0] >> 6];
     uint16_t id = ((data[0] & 0x3F) << 8) | (data[1] & 0xFF);
@@ -50,9 +67,55 @@ void AcuRiteComponent::decode_fridge_(uint8_t *data, uint8_t len) {
     uint16_t battery = (data[2] >> 6) & 1;
     float temp = ((float) (((data[3] & 0x7F) << 7) | (data[4] & 0x7F)) - 1800) * 0.1f * 5.0f / 9.0f;
     if (msg == 0x08) {
-      ESP_LOGD(TAG, "Fridge:      ch %c, id %04x, bat %x, temp %.1f", channel, id, battery, temp);
+      ESP_LOGD(TAG, "515 Fridge:  ch %c, id %04x, bat %x, temp %.1f", channel, id, battery, temp);
     } else if (msg == 0x09) {
-      ESP_LOGD(TAG, "Freezer:     ch %c, id %04x, bat %x, temp %.1f", channel, id, battery, temp);
+      ESP_LOGD(TAG, "515 Freezer: ch %c, id %04x, bat %x, temp %.1f", channel, id, battery, temp);
+    } else {
+      return;
+    }
+    for (auto *device : this->devices_) {
+      if (device->get_id() == id) {
+        device->update_battery(battery);
+        device->update_temperature(temp);
+      }
+    }
+  }
+}
+
+/*
+
+Acurite 00986 Refrigerator / Freezer Thermometer
+
+Data Format - 5 bytes, sent LSB first, reversed:
+
+    TT II II SS CC
+- T - Temperature in Fahrenheit, integer, MSB = sign.
+      Encoding is "Sign and magnitude"
+- I - 16 bit sensor ID
+      changes at each power up
+- S - status/sensor type
+      0x01 = Sensor 2
+      0x02 = low battery
+- C = CRC (CRC-8 poly 0x07, little-endian)
+
+*/
+void AcuRiteComponent::decode_986_(uint8_t *data, uint8_t len) {
+  if (len == 5 && this->validate_(data, 5, -1)) {
+ 
+    float temp = (data[0] & 0x7F) * 1.0f;
+    if (data[0] & 0x70) { temp *= -1.0f; }
+ 
+    uint16_t id = ((data[1] & 0xFF) << 8) | (data[2] & 0xFF);
+
+    static const char CHANNEL_LUT[4] = {'R', 'F', 'X', 'X'};
+    uint8_t sensor = data[3] & 0x01;
+    char channel = CHANNEL_LUT[sensor];
+
+    uint16_t battery = (data[2] >> 6) & 1;
+    if (msg == 0x08) {
+      ESP_LOGD(TAG, "986 Fridge:  ch %c, id %04x, bat %x, temp %.1f", channel, id, battery, temp);
+    } else if (msg == 0x09) {
+      ESP_LOGD(TAG, "986 Freezer: ch %c, id %04x, bat %x, temp %.1f", channel, id, battery, temp);
     } else {
       return;
     }
@@ -291,7 +354,8 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
           this->decode_atlas_(bytes, bits / 8);
           this->decode_notos_(bytes, bits / 8);
           this->decode_iris_(bytes, bits / 8);
-          this->decode_fridge_(bytes, bits / 8);
+          this->decode_515_(bytes, bits / 8);
+          this->decode_986_(bytes, bits / 8);
         }
 
         // reset if buffer is full
