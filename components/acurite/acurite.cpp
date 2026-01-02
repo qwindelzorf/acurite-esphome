@@ -389,7 +389,7 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
 
       if ((is_one || is_zero)) {
         bits += 1;
-        if (is_one) {
+        if (data.peek() > 1) {
           bytes[bits / 8] <<= 1;
           bytes[bits / 8] |= is_one ? 1 : 0;
         }
