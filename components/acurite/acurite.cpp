@@ -379,7 +379,7 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
     // ESP_LOGV(TAG, "Trying Device: %x", device);
     ESP_LOGV(TAG, "Trying Device %d (zero=%d, one=%d, sync=%d)", device->get_id(), zero_us, one_us, sync_us);
 
-    uint8_t bytes[10] = {0};
+    uint8_t bytes[12] = {0};
     uint32_t bits = 0;
     uint32_t syncs = 0;
     while (data.is_valid()) {
@@ -394,6 +394,18 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
           bits += 1;
         }
 
+        // try to decode on whole bytes
+        if ((bits & 7) == 0 && syncs >= device->get_sync_count()) {
+          this->decode_temperature_(device, bytes, bits / 8);
+          this->decode_rainfall_(device, bytes, bits / 8);
+          this->decode_lightning_(device, bytes, bits / 8);
+          this->decode_atlas_(device, bytes, bits / 8);
+          this->decode_notos_(device, bytes, bits / 8);
+          this->decode_iris_(device, bytes, bits / 8);
+          this->decode_515_(device, bytes, bits / 8);
+          this->decode_986_(device, bytes, bits / 8);
+        }
+
         // reset if buffer is full
         if (bits >= sizeof(bytes) * 8) {
           bits = 0;
@@ -406,18 +418,6 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
         // reset state
         bits = 0;
         syncs = 0;
-      }
-
-      // try to decode on whole bytes
-      if ((bits & 7) == 0 && syncs >= device->get_sync_count()) {
-        this->decode_temperature_(device, bytes, bits / 8);
-        this->decode_rainfall_(device, bytes, bits / 8);
-        this->decode_lightning_(device, bytes, bits / 8);
-        this->decode_atlas_(device, bytes, bits / 8);
-        this->decode_notos_(device, bytes, bits / 8);
-        this->decode_iris_(device, bytes, bits / 8);
-        this->decode_515_(device, bytes, bits / 8);
-        this->decode_986_(device, bytes, bits / 8);
       }
 
       data.advance();
