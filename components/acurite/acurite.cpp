@@ -84,7 +84,7 @@ CCII IIII | IIII IIII | pBMM MMMM | bTTT TTTT | bTTT TTTT | KKKK KKKK
 
 */
 
-void AcuRiteComponent::decode_515_(AcuRiteDevice& device, uint8_t *data, uint8_t len) {
+void AcuRiteComponent::decode_515_(AcuRiteDevice* device, uint8_t *data, uint8_t len) {
   if (len == 6 && this->validate_(data, 6, -1)) {
     char channel = CHANNEL_LUT[data[0] >> 6];
     uint16_t id = ((data[0] & 0x3F) << 8) | (data[1] & 0xFF);
@@ -99,9 +99,9 @@ void AcuRiteComponent::decode_515_(AcuRiteDevice& device, uint8_t *data, uint8_t
       return;
     }
 
-    if (device.get_id() == id) {
-      device.update_battery(battery);
-      device.update_temperature(temp);
+    if (device->get_id() == id) {
+      device->update_battery(battery);
+      device->update_temperature(temp);
     }
   }
 }
@@ -123,7 +123,7 @@ Data Format - 5 bytes, sent LSB first, reversed:
 - C = CRC (CRC-8 poly 0x07, little-endian)
 
 */
-void AcuRiteComponent::decode_986_(AcuRiteDevice& device, uint8_t *data, uint8_t len) {
+void AcuRiteComponent::decode_986_(AcuRiteDevice* device, uint8_t *data, uint8_t len) {
   if (len != 5) return;
   uint8_t crc = this->crc8le_(data, 4, 0x07);
   ESP_LOGV(TAG, "CRC data: %s", format_hex(data, len).c_str());
@@ -150,13 +150,13 @@ void AcuRiteComponent::decode_986_(AcuRiteDevice& device, uint8_t *data, uint8_t
     return;
   }
 
-  if (device.get_id() == id) {
-    device.update_battery(battery);
-    device.update_temperature(temp);
+  if (device->get_id() == id) {
+    device->update_battery(battery);
+    device->update_temperature(temp);
   }
 }
 
-void AcuRiteComponent::decode_temperature_(AcuRiteDevice& device, uint8_t *data, uint8_t len) {
+void AcuRiteComponent::decode_temperature_(AcuRiteDevice* device, uint8_t *data, uint8_t len) {
   if (len != 7) return;
   if ((data[2] & 0x3F) != 0x04) return;
   if (!this->validate_(data, 7, -1)) return;
@@ -168,14 +168,14 @@ void AcuRiteComponent::decode_temperature_(AcuRiteDevice& device, uint8_t *data,
   float temp = ((float) (((data[4] & 0x0F) << 7) | (data[5] & 0x7F)) - 1000) / 10.0;
   ESP_LOGD(TAG, "Temperature: ch %c, id %04x, bat %x, temp %.1f, rh %.1f", channel, id, battery, temp, humidity);
 
-  if (device.get_id() == id) {
-    device.update_battery(battery);
-    device.update_temperature(temp);
-    device.update_humidity(humidity);
+  if (device->get_id() == id) {
+    device->update_battery(battery);
+    device->update_temperature(temp);
+    device->update_humidity(humidity);
   }
 }
 
-void AcuRiteComponent::decode_rainfall_(AcuRiteDevice& device, uint8_t *data, uint8_t len) {
+void AcuRiteComponent::decode_rainfall_(AcuRiteDevice* device, uint8_t *data, uint8_t len) {
   if (len != 8) return;
   if ((data[2] & 0x3F) != 0x30) return;
   if (!this->validate_(data, 8, -1)) return;
@@ -187,13 +187,13 @@ void AcuRiteComponent::decode_rainfall_(AcuRiteDevice& device, uint8_t *data, ui
   uint32_t count = ((data[4] & 0x7F) << 14) | ((data[5] & 0x7F) << 7) | ((data[6] & 0x7F) << 0);
   ESP_LOGD(TAG, "Rainfall:    ch %c, id %04x, bat %x, count %.0f", channel, id, battery, (float) count);
 
-  if (device.get_id() == id) {
-    device.update_battery(battery);
-    device.update_rainfall(count);
+  if (device->get_id() == id) {
+    device->update_battery(battery);
+    device->update_rainfall(count);
   }
 }
 
-void AcuRiteComponent::decode_lightning_(AcuRiteDevice& device, uint8_t *data, uint8_t len) {
+void AcuRiteComponent::decode_lightning_(AcuRiteDevice* device, uint8_t *data, uint8_t len) {
   if (len != 9) return;
   if ((data[2] & 0x3F) != 0x2F) return;
   if (!this->validate_(data, 9, -1)) return;
@@ -209,16 +209,16 @@ void AcuRiteComponent::decode_lightning_(AcuRiteDevice& device, uint8_t *data, u
   ESP_LOGD(TAG, "Lightning:   ch %c, id %04x, bat %x, temp %.1f, rh %.1f, rfi %x, dist %.1f, count %.0f", channel, id,
             battery, temp, humidity, rfi, distance, (float) count);
 
-  if (device.get_id() == id) {
-    device.update_battery(battery);
-    device.update_temperature(temp);
-    device.update_humidity(humidity);
-    device.update_lightning(count);
-    device.update_distance(distance);
+  if (device->get_id() == id) {
+    device->update_battery(battery);
+    device->update_temperature(temp);
+    device->update_humidity(humidity);
+    device->update_lightning(count);
+    device->update_distance(distance);
   }
 }
 
-void AcuRiteComponent::decode_atlas_(AcuRiteDevice& device, uint8_t *data, uint8_t len) {
+void AcuRiteComponent::decode_atlas_(AcuRiteDevice* device, uint8_t *data, uint8_t len) {
   if (len != 10) return;
   if (!this->validate_(data, 10, -1)) return;
 
@@ -243,14 +243,14 @@ void AcuRiteComponent::decode_atlas_(AcuRiteDevice& device, uint8_t *data, uint8
     ESP_LOGD(TAG, "Atlas 7in1:  ch %c, id %04x, bat %x, speed %.1f, distance %.1f, lightning %.0f, temp %.1f, rh %.1f",
             channel, id, battery, speed, distance, (float) lightning, temp, humidity);
 
-    if (device.get_id() == id) {
-      device.update_battery(battery);
-      device.update_speed(speed);
-      device.update_temperature(temp);
-      device.update_humidity(humidity);
+    if (device->get_id() == id) {
+      device->update_battery(battery);
+      device->update_speed(speed);
+      device->update_temperature(temp);
+      device->update_humidity(humidity);
       if (distance > 0.0f) {
-        device.update_lightning(lightning);
-        device.update_distance(distance);
+        device->update_lightning(lightning);
+        device->update_distance(distance);
       }
     }
 
@@ -263,14 +263,14 @@ void AcuRiteComponent::decode_atlas_(AcuRiteDevice& device, uint8_t *data, uint8
     ESP_LOGD(TAG, "Atlas 7in1:  ch %c, id %04x, bat %x, speed %.1f, distance %.1f, lightning %.0f, dir %.1f, rain %.0f",
               channel, id, battery, speed, distance, (float) lightning, direction, (float) rain);
 
-    if (device.get_id() == id) {
-      device.update_battery(battery);
-      device.update_speed(speed);
-      device.update_direction(direction);
-      device.update_rainfall(rain);
+    if (device->get_id() == id) {
+      device->update_battery(battery);
+      device->update_speed(speed);
+      device->update_direction(direction);
+      device->update_rainfall(rain);
       if (distance > 0.0f) {
-        device.update_lightning(lightning);
-        device.update_distance(distance);
+        device->update_lightning(lightning);
+        device->update_distance(distance);
       }
     }
     return;
@@ -282,21 +282,21 @@ void AcuRiteComponent::decode_atlas_(AcuRiteDevice& device, uint8_t *data, uint8
     ESP_LOGD(TAG, "Atlas 7in1:  ch %c, id %04x, bat %x, speed %.1f, distance %.1f, lightning %.0f, uv %.1f, lux %.1f",
               channel, id, battery, speed, distance, (float) lightning, uv, lux);
 
-    if (device.get_id() == id) {
-      device.update_battery(battery);
-      device.update_speed(speed);
-      device.update_uv(uv);
-      device.update_lux(lux);
+    if (device->get_id() == id) {
+      device->update_battery(battery);
+      device->update_speed(speed);
+      device->update_uv(uv);
+      device->update_lux(lux);
       if (distance > 0.0f) {
-        device.update_lightning(lightning);
-        device.update_distance(distance);
+        device->update_lightning(lightning);
+        device->update_distance(distance);
       }
     }
     return;
   }
 }
 
-void AcuRiteComponent::decode_notos_(AcuRiteDevice& device, uint8_t *data, uint8_t len) {
+void AcuRiteComponent::decode_notos_(AcuRiteDevice* device, uint8_t *data, uint8_t len) {
   // the wind speed conversion value was derived by sending all possible raw values
   // my acurite, the conversion here will match almost exactly
   if (len != 8) return;
@@ -312,15 +312,15 @@ void AcuRiteComponent::decode_notos_(AcuRiteDevice& device, uint8_t *data, uint8
   ESP_LOGD(TAG, "Notos 3in1:  ch %c, id %04x, bat %x, temp %.1f, rh %.1f, speed %.1f", channel, id, battery, temp,
             humidity, speed);
 
-  if (device.get_id() == id) {
-    device.update_battery(battery);
-    device.update_temperature(temp);
-    device.update_humidity(humidity);
-    device.update_speed(speed);
+  if (device->get_id() == id) {
+    device->update_battery(battery);
+    device->update_temperature(temp);
+    device->update_humidity(humidity);
+    device->update_speed(speed);
   }
 }
 
-void AcuRiteComponent::decode_iris_(AcuRiteDevice& device, uint8_t *data, uint8_t len) {
+void AcuRiteComponent::decode_iris_(AcuRiteDevice* device, uint8_t *data, uint8_t len) {
   // the wind speed and direction conversion value were derived by sending all possible
   // raw values my acurite, the conversion here will match almost exactly
   if (len != 8) return;
@@ -342,11 +342,11 @@ void AcuRiteComponent::decode_iris_(AcuRiteDevice& device, uint8_t *data, uint8_
     ESP_LOGD(TAG, "Iris 5in1:   ch %c, id %04x, bat %x, speed %.1f, dir %.1f, rain %.0f", channel, id, battery,
               speed, direction, (float) count);
 
-    if (device.get_id() == id) {
-      device.update_battery(battery);
-      device.update_speed(speed);
-      device.update_direction(direction);
-      device.update_rainfall(count);
+    if (device->get_id() == id) {
+      device->update_battery(battery);
+      device->update_speed(speed);
+      device->update_direction(direction);
+      device->update_rainfall(count);
     }
   }
   else {
@@ -355,11 +355,11 @@ void AcuRiteComponent::decode_iris_(AcuRiteDevice& device, uint8_t *data, uint8_
     ESP_LOGD(TAG, "Iris 5in1:   ch %c, id %04x, bat %x, speed %.1f, temp %.1f, rh %.1f", channel, id, battery,
               speed, temp, humidity);
 
-    if (device.get_id() == id) {
-      device.update_battery(battery);
-      device.update_speed(speed);
-      device.update_temperature(temp);
-      device.update_humidity(humidity);
+    if (device->get_id() == id) {
+      device->update_battery(battery);
+      device->update_speed(speed);
+      device->update_temperature(temp);
+      device->update_humidity(humidity);
     }
   }
 }
@@ -375,11 +375,11 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
   data.set_tolerance(100, remote_base::TOLERANCE_MODE_TIME);
   while (data.is_valid()) {
     for (AcuRiteDevice* device : devices_) {
-      bool is_zero = data.peek_mark((*device).get_zero_duration()) || data.peek_space((*device).get_one_duration());
-      bool is_one = data.peek_mark((*device).get_one_duration()) || data.peek_space((*device).get_zero_duration());
-      bool is_sync = data.peek_mark((*device).get_sync_duration()) || data.peek_space((*device).get_sync_duration());
+      bool is_zero = data.peek_mark(device->get_zero_duration()) || data.peek_space(device->get_one_duration());
+      bool is_one = data.peek_mark(device->get_one_duration()) || data.peek_space(device->get_zero_duration());
+      bool is_sync = data.peek_mark(device->get_sync_duration()) || data.peek_space(device->get_sync_duration());
 
-      if ((is_one || is_zero) && syncs > (*device).get_sync_count()) {
+      if ((is_one || is_zero) && syncs > device->get_sync_count()) {
         if (data.peek() > 0) {
           // detect bits using on state
           bytes[bits / 8] <<= 1;
@@ -388,14 +388,14 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
 
           // try to decode on whole bytes
           if ((bits & 7) == 0) {
-            this->decode_temperature_(*device, bytes, bits / 8);
-            this->decode_rainfall_(*device, bytes, bits / 8);
-            this->decode_lightning_(*device, bytes, bits / 8);
-            this->decode_atlas_(*device, bytes, bits / 8);
-            this->decode_notos_(*device, bytes, bits / 8);
-            this->decode_iris_(*device, bytes, bits / 8);
-            this->decode_515_(*device, bytes, bits / 8);
-            this->decode_986_(*device, bytes, bits / 8);
+            this->decode_temperature_(device, bytes, bits / 8);
+            this->decode_rainfall_(device, bytes, bits / 8);
+            this->decode_lightning_(device, bytes, bits / 8);
+            this->decode_atlas_(device, bytes, bits / 8);
+            this->decode_notos_(device, bytes, bits / 8);
+            this->decode_iris_(device, bytes, bits / 8);
+            this->decode_515_(device, bytes, bits / 8);
+            this->decode_986_(device, bytes, bits / 8);
           }
 
           // reset if buffer is full

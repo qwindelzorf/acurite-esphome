@@ -49,14 +49,14 @@ class AcuRiteComponent : public Component, public remote_base::RemoteReceiverLis
   bool on_receive(remote_base::RemoteReceiveData data) override;
 
  protected:
-  void decode_temperature_(AcuRiteDevice& device, uint8_t *data, uint8_t len);
-  void decode_rainfall_(AcuRiteDevice& device, uint8_t *data, uint8_t len);
-  void decode_lightning_(AcuRiteDevice& device, uint8_t *data, uint8_t len);
-  void decode_atlas_(AcuRiteDevice& device, uint8_t *data, uint8_t len);
-  void decode_notos_(AcuRiteDevice& device, uint8_t *data, uint8_t len);
-  void decode_iris_(AcuRiteDevice& device, uint8_t *data, uint8_t len);
-  void decode_515_(AcuRiteDevice& device, uint8_t *data, uint8_t len);
-  void decode_986_(AcuRiteDevice& device, uint8_t *data, uint8_t len);
+  void decode_temperature_(AcuRiteDevice* device, uint8_t *data, uint8_t len);
+  void decode_rainfall_(AcuRiteDevice* device, uint8_t *data, uint8_t len);
+  void decode_lightning_(AcuRiteDevice* device, uint8_t *data, uint8_t len);
+  void decode_atlas_(AcuRiteDevice* device, uint8_t *data, uint8_t len);
+  void decode_notos_(AcuRiteDevice* device, uint8_t *data, uint8_t len);
+  void decode_iris_(AcuRiteDevice* device, uint8_t *data, uint8_t len);
+  void decode_515_(AcuRiteDevice* device, uint8_t *data, uint8_t len);
+  void decode_986_(AcuRiteDevice* device, uint8_t *data, uint8_t len);
 
   bool validate_(uint8_t *data, uint8_t len, int8_t except);
   uint8_t crc8le_(uint8_t *data, uint8_t len, uint8_t poly) const;
