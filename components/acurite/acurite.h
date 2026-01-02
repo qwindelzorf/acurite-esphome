@@ -2,6 +2,7 @@
 
 #include "esphome/components/remote_receiver/remote_receiver.h"
 #include <cstdint>
+#include <vector>
 
 namespace esphome {
 namespace acurite {
@@ -40,6 +41,8 @@ class AcuRiteComponent : public Component, public remote_base::RemoteReceiverLis
   void decode_515_(uint8_t *data, uint8_t len);
   void decode_986_(uint8_t *data, uint8_t len);
   bool validate_(uint8_t *data, uint8_t len, int8_t except);
+  uint8_t crc8le_(uint8_t *data, uint8_t len, uint8_t poly) const;
+  uint8_t reverse8_(uint8_t data) const;
   std::vector<AcuRiteDevice *> devices_;
 };
 

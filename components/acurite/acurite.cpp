@@ -42,6 +42,32 @@ bool AcuRiteComponent::validate_(uint8_t *data, uint8_t len, int8_t except) {
   return true;
 }
 
+uint8_t AcuRiteComponent::reverse8_(uint8_t x) const {
+    x = (x & 0xF0) >> 4 | (x & 0x0F) << 4;
+    x = (x & 0xCC) >> 2 | (x & 0x33) << 2;
+    x = (x & 0xAA) >> 1 | (x & 0x55) << 1;
+    return x;
+}
+
+uint8_t AcuRiteComponent::crc8le_(uint8_t *data, uint8_t len, uint8_t poly) const {
+  ESP_LOGV(TAG, "CRC data: %s", format_hex(data, len).c_str());
+  uint8_t remainder = 0;
+  unsigned byte, bit;
+  poly = reverse8_(poly);
+
+  for (byte = 0; byte < len; ++byte) {
+    remainder ^= data[byte];
+    for (bit = 0; bit < 8; ++bit) {
+      if (remainder & 1) {
+        remainder = (remainder >> 1) ^ poly;
+      } else {
+        remainder = (remainder >> 1);
+      }
+    }
+  }
+  return remainder;
+}
+
 /*
 
 Decode Acurite 515 Refrigerator/Freezer sensors
@@ -100,7 +126,7 @@ Data Format - 5 bytes, sent LSB first, reversed:
 
 */
 void AcuRiteComponent::decode_986_(uint8_t *data, uint8_t len) {
-  if (len == 5 && this->validate_(data, 5, -1)) {
+  if (len == 5 && this->crc8le_(data, 4, 0x07) == data[4]) {
  
     float temp = (data[0] & 0x7F) * 1.0f;
     if (data[0] & 0x70) { temp *= -1.0f; }
