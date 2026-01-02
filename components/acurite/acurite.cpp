@@ -50,7 +50,6 @@ uint8_t AcuRiteComponent::reverse8_(uint8_t x) const {
 }
 
 uint8_t AcuRiteComponent::crc8le_(uint8_t *data, uint8_t len, uint8_t poly) const {
-  ESP_LOGV(TAG, "CRC data: %s", format_hex(data, len).c_str());
   uint8_t remainder = 0;
   unsigned byte, bit;
   poly = reverse8_(poly);
@@ -126,30 +125,35 @@ Data Format - 5 bytes, sent LSB first, reversed:
 
 */
 void AcuRiteComponent::decode_986_(uint8_t *data, uint8_t len) {
-  if (len == 5 && this->crc8le_(data, 4, 0x07) == data[4]) {
- 
-    float temp = (data[0] & 0x7F) * 1.0f;
-    if (data[0] & 0x70) { temp *= -1.0f; }
- 
-    uint16_t id = ((data[1] & 0xFF) << 8) | (data[2] & 0xFF);
-
-    static const char CHANNEL_LUT[4] = {'R', 'F', 'X', 'X'};
-    uint8_t sensor = data[3] & 0x01;
-    char channel = CHANNEL_LUT[sensor];
-    uint16_t battery = (data[3] >> 1) & 0x01;
-
-    if (sensor == 0) {
-      ESP_LOGD(TAG, "986 Fridge:  ch %c, id %04x, bat %x, temp %.1f", channel, id, battery, temp);
-    } else if (sensor == 1) {
-      ESP_LOGD(TAG, "986 Freezer: ch %c, id %04x, bat %x, temp %.1f", channel, id, battery, temp);
-    } else {
+  if (len != 5) return;
+  uint8_t crc = this->crc8le_(data, 4, 0x07);
+  ESP_LOGV(TAG, "CRC data: %s", format_hex(data, len).c_str());
+  if (crc != data[4]) {
+      ESP_LOGV(TAG, "CRC failure: %x != %x", crc, data[4]);
       return;
-    }
-    for (auto *device : this->devices_) {
-      if (device->get_id() == id) {
-        device->update_battery(battery);
-        device->update_temperature(temp);
-      }
+  }
+ 
+  float temp = (data[0] & 0x7F) * 1.0f;
+  if (data[0] & 0x70) { temp *= -1.0f; }
+
+  uint16_t id = ((data[1] & 0xFF) << 8) | (data[2] & 0xFF);
+
+  static const char CHANNEL_LUT[4] = {'R', 'F', 'X', 'X'};
+  uint8_t sensor = data[3] & 0x01;
+  char channel = CHANNEL_LUT[sensor];
+  uint16_t battery = (data[3] >> 1) & 0x01;
+
+  if (sensor == 0) {
+    ESP_LOGD(TAG, "986 Fridge:  ch %c, id %04x, bat %x, temp %.1f", channel, id, battery, temp);
+  } else if (sensor == 1) {
+    ESP_LOGD(TAG, "986 Freezer: ch %c, id %04x, bat %x, temp %.1f", channel, id, battery, temp);
+  } else {
+    return;
+  }
+  for (auto *device : this->devices_) {
+    if (device->get_id() == id) {
+      device->update_battery(battery);
+      device->update_temperature(temp);
     }
   }
 }
