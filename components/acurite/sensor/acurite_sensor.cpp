@@ -94,9 +94,9 @@ void AcuRiteSensor::update_rainfall(uint32_t count) {
 
 void AcuRiteSensor::dump_config() {
   ESP_LOGCONFIG(TAG, "AcuRite Sensor: 0x%04x", this->id_);
-  ESP_LOGCONFIG(TAG, "  zero duration: %dus", this->zero_duration_);
-  ESP_LOGCONFIG(TAG, "  one duration: %dus", this->one_duration_);
-  ESP_LOGCONFIG(TAG, "  sync duration: %dus", this->sync_duration_);
+  ESP_LOGCONFIG(TAG, "  zero duration: %" PRIu32 " us", this->zero_duration_);
+  ESP_LOGCONFIG(TAG, "  one duration: %" PRIu32 " us", this->one_duration_);
+  ESP_LOGCONFIG(TAG, "  sync duration: %" PRIu32 " us", this->sync_duration_);
   ESP_LOGCONFIG(TAG, "  sync count: %d", this->sync_count_);
   LOG_SENSOR("  ", "Speed", this->speed_sensor_);
   LOG_SENSOR("  ", "Direction", this->direction_sensor_);

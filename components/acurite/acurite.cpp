@@ -377,7 +377,7 @@ bool AcuRiteComponent::on_receive(remote_base::RemoteReceiveData data) {
     uint32_t sync_us = device->get_sync_duration();
 
     // ESP_LOGV(TAG, "Trying Device: %x", device);
-    ESP_LOGV(TAG, "Trying Device %d (zero=%d, one=%d, sync=%d)", device->get_id(), zero_us, one_us, sync_us);
+    ESP_LOGV(TAG, "Trying Device %d (zero=%" PRIu32 ", one=%" PRIu32 ", sync=%" PRIu32 ")", device->get_id(), zero_us, one_us, sync_us);
 
     uint8_t bytes[12] = {0};
     uint32_t bits = 0;
